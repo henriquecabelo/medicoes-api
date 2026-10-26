@@ -9,7 +9,7 @@ const port = 3000;
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('A API está operacional');
 });
 
 // Listar todas as medições
@@ -33,7 +33,7 @@ app.get('/medicao/:id', async (req, res) => {
     const [rows] = await db.execute('SELECT * FROM medicoes WHERE id = ?', [id]);
     if (rows.length === 0) {
       return res.status(404).json({
-        mensagem: "Medição não encontrada"
+        mensagem: "Medição ( ID ) não encontrada"
       });
     }
     res.status(200).json(rows[0]);
