@@ -4,8 +4,9 @@ function calcularTemp(m) {
         throw new Error("O valor fornecido deve ser um número.");
     }
 
-    const valor_convertido = m * 3.28084;
+    const compri = m * 3.28084;
     let classificacao = "";
+    const valor_convertido = parseFloat(compri.toFixed(2));
 
     // Ajuste nos limites considerando a temperatura convertida (Fahrenheit) ou mude para 'C' se preferir avaliar em Celsius
     if (valor_convertido < 5) {

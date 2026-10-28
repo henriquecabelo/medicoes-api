@@ -25,15 +25,13 @@ app.get('/medicao', async (req, res) => {
   }
 });
 
-// Buscar medição por ID
-app.get('/medicao/:id', async (req, res) => {
-  const { id } = req.params;
-
+app.get('/medicao/alta-velocidade', async (req, res) => {
+   
   try {
-    const [rows] = await db.execute('SELECT * FROM medicoes WHERE id = ?', [id]);
+    const [rows] = await db.execute('SELECT * FROM medicoes WHERE classificacao = "Alta Velocidade"');
     if (rows.length === 0) {
       return res.status(404).json({
-        mensagem: "Medição ( ID ) não encontrada"
+        mensagem: "Registro de velocidade não encontrada"
       });
     }
     res.status(200).json(rows[0]);
@@ -44,14 +42,16 @@ app.get('/medicao/:id', async (req, res) => {
     });
   }
 });
-app.get('/medicao/alta-velocidade', async (req, res) => {
+
+// Buscar medição por ID
+app.get('/medicao/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [rows] = await db.execute('SELECT * FROM medicoes WHERE classificacao = "Alta Velocidade"');
+    const [rows] = await db.execute('SELECT * FROM medicoes WHERE id = ?', [id]);
     if (rows.length === 0) {
       return res.status(404).json({
-        mensagem: "Registro não encontrada"
+        mensagem: "Medição ( ID ) não encontrada (1)"
       });
     }
     res.status(200).json(rows[0]);
@@ -76,6 +76,80 @@ app.post('/medicao', async (req, res) => {
   const { valor_convertido, classificacao } = calcularTemp(Number(valor));
   const unidade_original = "Celsius";
   const unidade_convertida = "Fahrenheit";
+
+  try {
+    const [result] = await db.execute(
+      'INSERT INTO medicoes (descricao, tipo, valor_original, unidade_original, valor_convertido, unidade_convertida, classificacao) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [descricao, tipo, valor, unidade_original, valor_convertido, unidade_convertida, classificacao]
+    );
+    
+    res.status(201).json({
+      id: result.insertId,
+      descricao,
+      tipo,
+      valor_original: valor,
+      unidade_original,
+      valor_convertido,
+      unidade_convertida,
+      classificacao
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro Interno do Servidor",
+      detalhes: error.message
+    });
+  }
+});
+// Criar nova velocidade medição
+app.post('/medicao/velocidade', async (req, res) => {
+  const { descricao, tipo, valor } = req.body;
+  
+  if (!descricao || !tipo || valor === undefined) {
+    return res.status(400).json({
+      mensagem: "Verifique se todos os campos estão preenchidos"
+    });
+  }
+
+  const { valor_convertido, classificacao } = calcularVelocidade(Number(valor));
+  const unidade_original = "km/h";
+  const unidade_convertida = "m/s";
+
+  try {
+    const [result] = await db.execute(
+      'INSERT INTO medicoes (descricao, tipo, valor_original, unidade_original, valor_convertido, unidade_convertida, classificacao) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [descricao, tipo, valor, unidade_original, valor_convertido, unidade_convertida, classificacao]
+    );
+    
+    res.status(201).json({
+      id: result.insertId,
+      descricao,
+      tipo,
+      valor_original: valor,
+      unidade_original,
+      valor_convertido,
+      unidade_convertida,
+      classificacao
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro Interno do Servidor",
+      detalhes: error.message
+    });
+  }
+});
+// Criar nova comprimento medição
+app.post('/medicao/comprimento', async (req, res) => {
+  const { descricao, tipo, valor } = req.body;
+  
+  if (!descricao || !tipo || valor === undefined) {
+    return res.status(400).json({
+      mensagem: "Verifique se todos os campos estão preenchidos"
+    });
+  }
+
+  const { valor_convertido, classificacao } = calcularComprimento(Number(valor));
+  const unidade_original = "Metros";
+  const unidade_convertida = "Pés";
 
   try {
     const [result] = await db.execute(
