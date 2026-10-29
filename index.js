@@ -34,7 +34,7 @@ app.get('/medicao/alta-velocidade', async (req, res) => {
         mensagem: "Registro de velocidade não encontrada"
       });
     }
-    res.status(200).json(rows[0]);
+    res.status(200).json(rows);
   } catch (error) {
     res.status(500).json({
       mensagem: "Erro Interno do Servidor",
@@ -175,22 +175,56 @@ app.post('/medicao/comprimento', async (req, res) => {
   }
 });
 
-// Atualizar medição
+// Atualizar medição 
 app.put('/medicao/:id', async (req, res) => {
   const { id } = req.params;
   const { descricao, tipo, valor } = req.body;
 
+  // 1. Validação inicial de campos obrigatórios
   if (!descricao || !tipo || valor === undefined || !id) {
     return res.status(400).json({
       mensagem: "Verifique se todos os campos estão preenchidos"
     });
   }
 
-  const { valor_convertido, classificacao } = calcularTemp(Number(valor));
-  const unidade_original = "Celsius";
-  const unidade_convertida = "Fahrenheit";
+  // 2. Inicializa as variáveis com let para permitir reatribuição
+  let unidade_original = "";
+  let unidade_convertida = "";
+  let valor_convertido = null;
+  let classificacao = "";
+
+  // 3. Regra de negócio baseada no tipo
+  if (tipo === "Temperatura") {
+    // Remove o "const" daqui para usar as variáveis do escopo superior
+    const resultadoTemp = calcularTemp(Number(valor));
+    valor_convertido = resultadoTemp.valor_convertido;
+    classificacao = resultadoTemp.classificacao;
+    
+    unidade_original = "Celsius";
+    unidade_convertida = "Fahrenheit";
+  }
+  // 3. Regra de negócio baseada no tipo
+  if (tipo === "Velocidade") {
+    // Remove o "const" daqui para usar as variáveis do escopo superior
+    const resultadoTemp = calcularVelocidade(Number(valor));
+    valor_convertido = resultadoTemp.valor_convertido;
+    classificacao = resultadoTemp.classificacao;
+    
+    unidade_original = "KM/H";
+    unidade_convertida = "M/S";
+  }
+  if (tipo === "Comprimento") {
+    // Remove o "const" daqui para usar as variáveis do escopo superior
+    const resultadoTemp = calcularComprimento(Number(valor));
+    valor_convertido = resultadoTemp.valor_convertido;
+    classificacao = resultadoTemp.classificacao;
+    
+    unidade_original = "Metros";
+    unidade_convertida = "Pés";
+  }
 
   try {
+    // 4. Executa a atualização no banco de dados
     const [result] = await db.execute(
       'UPDATE medicoes SET descricao = ?, tipo = ?, valor_original = ?, unidade_original = ?, valor_convertido = ?, unidade_convertida = ?, classificacao = ? WHERE id = ?',
       [descricao, tipo, valor, unidade_original, valor_convertido, unidade_convertida, classificacao, id]
@@ -202,13 +236,16 @@ app.put('/medicao/:id', async (req, res) => {
       });
     }
 
+    // 5. Resposta de sucesso
     res.status(200).json({
       mensagem: "Medição atualizada com sucesso.",
       id,
       descricao,
       tipo,
       valor_original: valor,
+      unidade_original,
       valor_convertido,
+      unidade_convertida,
       classificacao
     });
   } catch (error) {
